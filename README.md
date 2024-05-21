@@ -29,5 +29,23 @@ A ton of Python Packages:
 * secrets 
 * pandas
 
-## Practice Example and NSF knowledgment 
+## Example code explaination 
+
+The provided code is configured to request design point from the design space modeling for the following configurations: 
+
+Locking type : [SFLL, AntiSAT, SLL] 
+Locking size : Add up to 64 bits  
+Lockable modules : [alu, decoder, branch] 
+
+Current parameters: 
+
+Initial points = 25 
+Number of iterations = 30 
+Number of goal variables = 4 
+Number of independent variables = 3  
+
+The script is tested on PyCharm using virtual environment. Most of the configurations are harded coded with in the script. See lines 500 to 627 for the configurations
+
+
+## This work is supported by National Science Foundation grant 2245573
 
