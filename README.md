@@ -1,4 +1,4 @@
-# DSM_for_logic_locking
+# Low Overhead Logic Locking for System-Level Security: A Design Space Modeling Approach
 Design Space Modeling Algorithms used for the paper Low Power Logic Locking using Design Space Modeling
 
 Author: Long Lam (ll5530@rit.edu)
