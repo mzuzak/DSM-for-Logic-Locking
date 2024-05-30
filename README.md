@@ -58,7 +58,7 @@ See function find_ROI for the configurations for the region of interest
 
 If you have found the design space modeling algorithm useful for your research, We would greatly appreciate citations to the original work. 
 
-    LAM, L., MELNYK, M., AND ZUZAK, M. Low overhead logic locking for system-level security: A design space modeling approach. In Proceedings of the International Symposium on Low Power Electronic Design (ISLPED), 2024
+    Lam, Long, Melnyk, Maksym, and Zuzak, Michael, Low overhead logic locking for system-level security: A design space modeling approach. In Proceedings of the International Symposium on Low Power Electronic Design (ISLPED), 2024
 
 
 ## Final remarks:
