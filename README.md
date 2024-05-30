@@ -1,15 +1,17 @@
-# Low Overhead Logic Locking for System-Level Security: A Design Space Modeling Approach
-Design Space Modeling Algorithms used for the paper Low Power Logic Locking using Design Space Modeling
+# Low Overhead Logic Locking for System-Level Security : A Design Space Modeling Approach
 
-Author: Long Lam (ll5530@rit.edu)
+DSM for Logic Locking is an open-source example script implementing Design Space Modeling for obtaining the satisfying locking configuration given an arbitary IC. It provides a mean for Python users utilizing R-function,,specifically SSANOVA modeling, while staying in the Pythoin domain An extensive overview of the design space modeling algorithm can be found in the ISLPED'24 paper titled: 
 
-* Descripition: 
+    Low Overhead Logic Locking for System-Level Security : A Design Space Modeling Approach 
+    Authors: Long Lam. Maksym Melnyk, Michael Zuzak
 
-This tool performs design space modeling for the open-source RISC-V processor using Design Space Modeling, which also acts as a server-client system, with the design space modeling tool being the client, and the automation tool being the server. 
 
-The automation tool is not included in this repo.
+This code-base contains the example python script for the design space modeling algorithm decsribed in Section 5 of the paper. Note that this code-base this modeling algorithm is a local TCP client, which will request points (indepdent variables) for their response. 
 
-The DSM tool request point from the automation tool at each iteration. 
+## Running  
+
+This is tested and run using PyCharm 2019. Virtual environment is used to download all dependencies. 
+
 
 ## Pre-Req: 
 
@@ -46,6 +48,22 @@ Number of independent variables = 3
 
 The script is tested on PyCharm using virtual environment. Most of the configurations are harded coded with in the script. See lines 500 to 627 for the configurations
 
+## Citations:
 
-## This work is supported by National Science Foundation grant 2245573
+If you have found the design space modeling algorithm useful for your research, We would greatly appreciate citations to the original work. 
+
+    TBA
+
+
+## Final remarks:
+
+Please do not hesitate to reach out to us with any questions/comments/issues regarding the repo or the work itself:
+   
+    Long Lam <ll5530@rit.edu> (MS'24) / Michael Zuzak <mjzeec@rit.edu> (Assistant Professor)
+    Department of Computer Engineer
+    Rochester Institute of Technology (RIT) 
+
+
+## Acknowledgements:
+This work is supported by National Science Foundation grant 2245573
 
