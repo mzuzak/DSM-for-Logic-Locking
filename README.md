@@ -10,7 +10,7 @@ This code-base contains the example python script for the design space modeling 
 
 ## Running  
 
-This is tested and run using PyCharm 2019. Virtual environment is used to download all dependencies. 
+This is tested and run using PyCharm 2019. Virtual environment is used to download all dependencies. DSM algorithm will send over a list of points (to the local TCP server) to be sampled at each iteration. 
 
 
 ## Pre-Req: 
@@ -31,7 +31,8 @@ A ton of Python Packages:
 * secrets 
 * pandas
 
-## Example code explaination 
+
+## Initial Parameters 
 
 The provided code is configured to request design point from the design space modeling for the following configurations: 
 
@@ -41,12 +42,17 @@ Lockable modules : [alu, decoder, branch]
 
 Current parameters: 
 
-Initial points = 25  
-Number of iterations = 30  
-Number of goal variables = 4  
-Number of independent variables = 3   
+Initial points = 25  (see line 405) 
+Number of iterations = 30  (see line 408) 
+Number of response variables = 4  (see line 417) 
+Number of independent variables = 3  (see line 411) 
 
-The script is tested on PyCharm using virtual environment. Most of the configurations are harded coded with in the script. See lines 500 to 627 for the configurations
+Additional corners points were added to prevent out of bound interpolation (line 476 - 518) 
+
+## Region of Interest 
+
+See function find_ROI for the configurations for the region of interest  
+
 
 ## Citations:
 
@@ -60,7 +66,7 @@ If you have found the design space modeling algorithm useful for your research, 
 Please do not hesitate to reach out to us with any questions/comments/issues regarding the repo or the work itself:
    
     Long Lam <ll5530@rit.edu> (MS'24) / Michael Zuzak <mjzeec@rit.edu> (Assistant Professor)
-    Department of Computer Engineer
+    Department of Computer Engineering
     Rochester Institute of Technology (RIT) 
 
 
