@@ -1,9 +1,9 @@
 # Low Overhead Logic Locking for System-Level Security : A Design Space Modeling Approach
 
-DSM for Logic Locking is an open-source example script implementing Design Space Modeling for obtaining the satisfying locking configuration given an arbitary IC. It provides a mean for Python users utilizing R-function,,specifically SSANOVA modeling, while staying in the Pythoin domain An extensive overview of the design space modeling algorithm can be found in the ISLPED'24 paper titled: 
+DSM for Logic Locking is an open-source example script implementing Design Space Modeling for obtaining the satisfying locking configuration given an arbitary IC. It provides a mean for Python users utilizing R-function, specifically SSANOVA modeling, while staying in the Python domain An extensive overview of the design space modeling algorithm can be found in the ISLPED'24 paper titled: 
 
     Low Overhead Logic Locking for System-Level Security : A Design Space Modeling Approach 
-    Authors: Long Lam. Maksym Melnyk, Michael Zuzak
+    Authors: Long Lam, Maksym Melnyk, Michael Zuzak
 
 
 This code-base contains the example python script for the design space modeling algorithm decsribed in Section 5 of the paper. Note that this code-base this modeling algorithm is a local TCP client, which will request points (indepdent variables) for their response. 
