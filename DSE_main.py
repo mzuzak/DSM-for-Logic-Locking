@@ -180,114 +180,6 @@ def make_model():
     # x0:x2 implies the interaction of two variables, i.e. f(x0,x2) 
     return f"x0+x1 +x2+x0:x1+x1:x2+x0:x2"
 
-# This function is not used in the final code - future work for non-greedy algorithm...
-def make_complex_model(num)
-'''
-    Select term and construct models based on the process described in paper - Design Space Modeling and Simulation for Physically
-Constrained 3D CPUs
-
-'''
-    # Generate regression model with the sampled data
-    first_term = []
-    second_term = []
-    model = {}  # a dictionary for the model term
-    formula = f"y{num}~"
-
-    matrix = np.zeros(
-        (num_x_variables, num_x_variables))  # 2D array here to indicate which 2nd order term has been added
-
-    current_R2_bar = -999
-    num_model_terms = 0
-    keep_going_1st = True
-    while keep_going_1st:
-        # Adding first order term that is not in the model
-        for i in range(0, num_x_variables):
-            if not (i in first_term):
-                # pair : {variable name, R^2}
-                if formula == f"y{num}~":
-                    model[i] = get_R2(SSANOVA(formula + "x" + str(i)))  # creating the model
-                else:
-                    model[i] = get_R2(SSANOVA(formula + "+x" + str(i)))  # creating the model
-                new_R2_bar = get_R2_bar(model[i], num_points, num_model_terms)
-                model[i] = new_R2_bar
-                if verbose:
-                    print("Adjusted R^2 = " + str(new_R2_bar) + "\n\n")
-        max_R2_variable = max(model, key=model.get)
-        # adding this variable into the list, so that we don't pick this variable again
-        first_term.append(max_R2_variable)
-        new_R2_bar = get_R2_bar(model[max_R2_variable], num_points, num_model_terms)
-
-        if new_R2_bar > current_R2_bar:
-            current_R2_bar = new_R2_bar
-            num_model_terms = num_model_terms + 1
-            if formula == f"y{num}~":
-                formula = formula + " x" + str(max_R2_variable)
-            else:
-                formula = formula + " + x" + str(max_R2_variable)
-
-            print("=================================================================================")
-            print("First order model term added : x" + str(max_R2_variable) + " with adjusted R^2 = " + str(
-                current_R2_bar))
-            print("=================================================================================")
-
-        else:  # first termination condition, if adding any more first order term won't help
-            print("=================================================================================")
-            print("Adding new first order term does not help - Model creation done")
-            print("=================================================================================")
-            break  # break this loop
-
-        # second termination condition - there is no more first order term to add
-        keep_going_1st = False if len(first_term) == num_x_variables else True
-
-        first_term.append(max_R2_variable)  # storing the model term into a list
-
-        # keep going flag to indicate if the tool should keep trying to find a second order term to add
-        keep_going_2nd = True  # Will set to false once adding second order term does not help
-        # iterating through all the variables for the second order term interaction
-        while keep_going_2nd:
-            model[max_R2_variable] = -999
-            for i in range(0, num_x_variables):
-                if not (i == max_R2_variable):  # we ain't checking the interaction of the term with itself lmfao
-                    if matrix[max_R2_variable][i] == 0 and matrix[i][max_R2_variable] == 0:
-                        formula_test = formula + " + x" + str(max_R2_variable) + ":x" + str(i)
-                        model[i] = get_R2(
-                            SSANOVA(formula_test))  # grabbing the R^2 of the model after adding interaction=
-                        new_R2_bar = get_R2_bar(model[i], num_points, num_model_terms)
-                        model[i] = new_R2_bar
-                        if verbose:
-                            print("Adjusted R^2 = " + str(new_R2_bar) + "\n\n")
-
-            # Finding the next high adjusted R2 from 2nd order term
-            old_R2_variable = max_R2_variable
-            max_R2_variable = max(model, key=model.get)
-            new_R2_bar = model[max_R2_variable]
-
-            # if adding help
-            if new_R2_bar > current_R2_bar:
-                current_R2_bar = new_R2_bar
-                num_model_terms = num_model_terms + 1
-                formula = formula + " + x" + str(old_R2_variable) + ":x" + str(max_R2_variable)
-                print("=================================================================================")
-                print("Added second order model term : x" + str(old_R2_variable) + ":x" + str(
-                    max_R2_variable) + " with adjusted R^2 = " + str(current_R2_bar))
-                print("=================================================================================")
-                second_term.append(max_R2_variable)
-                matrix[old_R2_variable][max_R2_variable] = 1
-                matrix[max_R2_variable][old_R2_variable] = 1
-                max_R2_variable = old_R2_variable
-
-            else:  # doesn't help, time to move on
-                keep_going_2nd = False
-                print("=================================================================================")
-                print("No more second order model term will help, moving onto the next first order model term")
-                print("=================================================================================")
-    print("============================================================================")
-    print("Final Formula = " + formula + " with adjusted R^2 of " + str(current_R2_bar))
-    print("============================================================================")
-
-    return formula[3:]
-
-
 def predict(formula, list_to_pred, list_of_var):
     """
     This function return the prediction vector of the model
@@ -649,18 +541,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                         sampled_indep[i].append(new_x[i])
                     operations.append(new_x)
 
-        '''This is for random sampling method''' 
-        # while (len(existing_points_set)) < inital_points - 4:
-        #     random_integers = np.random.randint(low=0, high=len(indep_var[0]), size=inital_points - len(existing_points_set) - 4)
-        #     random_integers = random_integers.tolist()
-        #     for new_point in random_integers:
-        #         # new_point = random.sample(range(len(indep_var[0])), 1)[0]
-        #         if new_point not in existing_points_set:  # we dont want to add point that we already have
-        #             existing_points_set.add(new_point)
-        #             new_x = x_val[new_point]
-        #             for i in range(num_x_variables):
-        #                 sampled_indep[i].append(new_x[i])
-        #             operations.append(new_x)
 
         # Send the entire operations array over to the accelerator
         message = json.dumps({"lock": operations, "mod": mod[ii], "done": None})
