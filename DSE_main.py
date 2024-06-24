@@ -6,7 +6,7 @@ Python program to perform DSE methods to obtain "optimal" design configuration
 Author : Long Lam
 
 Requirements:
-    -Python version >= 3.7 
+    -Python version >= 3.7
     -if the gss folder is not cloned from git, then please install it from
         https://cran.r-project.org/web/packages/gss/index.html
             Window binaries: r-devel
@@ -15,9 +15,9 @@ Requirements:
     - If there is any error related to the "R_HOME", then put R_HOME=C:<where you install R>\R\R-4.3.1  in the list
             of environmental variables
 
-Brief descripition: 
-    This is a client end of the tool. The tool request points to the server (which is the automation collecting points), it end uses DSM 
-    to compute the satifsying configuration based on the ROI defined by the user 
+Brief descripition:
+    This is a client end of the tool. The tool request points to the server (which is the automation collecting points), it end uses DSM
+    to compute the satifsying configuration based on the ROI defined by the user
 
 """
 
@@ -33,21 +33,23 @@ import pandas as pd
 from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
-from rpy2.robjects.packages import importr
-from rpy2.robjects import pandas2ri, robjects
+from rpy2.robjects.packages import \
+    importr  # IMPORTANT : install version 3.5.12 of this package if installing the latest one doesn't work
+from rpy2.robjects import pandas2ri
+import rpy2.robjects as robjects
 
 # Constant host and port numbers for local TCP server-client
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432  # Port to listen on
 
 # To save time from typing
-r = robjects.r 
+r = robjects.r
 '''To run typed R codes in Python , used r(code)'''
 
 # importing the gss package into gss variable
 path = os.path.dirname(__file__)
 # gss = importr('gss')               ## uncommment this if you were able to move the gss folder into the R directory
-gss = importr('gss', lib_loc=path)   ## uncommment this if you can't move the gss package into the R directory
+gss = importr('gss', lib_loc=path)  ## uncommment this if you can't move the gss package into the R directory
 
 # Verbose - True if you want every little detail of the tool to be printed, False otherwise
 verbose = False  # Set this to false for no verbosity
@@ -55,6 +57,7 @@ verbose = False  # Set this to false for no verbosity
 """
 Below are some utility functions used for this work 
 """
+
 
 def convert2R(name, value):
     """
@@ -71,12 +74,12 @@ def convert2R(name, value):
 
 def SSANOVA(formula):
     """
-    Fit SSANOVA model and return the model name 
+    Fit SSANOVA model and return the model name
 
-    the model name is a R variale in the R enivronment, which is only accessiable via R  
+    the model name is a R variale in the R enivronment, which is only accessiable via R
     """
     r_code = f"""
-        
+
        model.SSANOVA_fit <- tryCatch({{
           model.SSANOVA_fit <- ssanova0({formula})
         }}, error = function(e) {{
@@ -106,12 +109,12 @@ def SSANOVA(formula):
     return f"model.SSANOVA_fit"
 
 
-# This function is not used in the main code - left over from testing.... 
+# This function is not used in the main code - left over from testing....
 def logitisc(formula):
     """
-    Fit one dimensioanl logitisc model of  and return the model name 
+    Fit one dimensioanl logitisc model of  and return the model name
 
-    the model name is a R variale in the R enivronment, which is only accessiable via R  
+    the model name is a R variale in the R enivronment, which is only accessiable via R
     """
 
     r_code = f"model.logit_fit <- lm( log({formula}) \n"
@@ -127,13 +130,14 @@ def logitisc(formula):
 
     return f"model.logit_fit"
 
-# This function is not used in the main code - left over from testing.... 
+
+# This function is not used in the main code - left over from testing....
 def polynomial(num, order):
     """
-    Fit one dimensioanl polynomial model and return the model name 
-    order of the polynomial is a user parameter 
+    Fit one dimensioanl polynomial model and return the model name
+    order of the polynomial is a user parameter
 
-    the model name is a R variale in the R enivronment, which is only accessiable via R  
+    the model name is a R variale in the R enivronment, which is only accessiable via R
     """
 
     r_code = f"model.poly_fit <- lm(y_{str(num)} ~ poly(x0,{str(order)})) \n"
@@ -176,9 +180,10 @@ def get_R2_bar(R2, s, m):
 
 def make_model():
     # 3 varables fitting....first draft of the work uses the same modeling equation
-    # f(x0) + f(x1) + f(x2) + f(x1,x2) + f(x0,x2) + f(x1,x2) 
-    # x0:x2 implies the interaction of two variables, i.e. f(x0,x2) 
+    # f(x0) + f(x1) + f(x2) + f(x1,x2) + f(x0,x2) + f(x1,x2)
+    # x0:x2 implies the interaction of two variables, i.e. f(x0,x2)
     return f"x0+x1 +x2+x0:x1+x1:x2+x0:x2"
+
 
 def predict(formula, list_to_pred, list_of_var):
     """
@@ -192,7 +197,7 @@ def predict(formula, list_to_pred, list_of_var):
 
     model_name = SSANOVA(formula)
 
-    # this is to convert the list_to_pred variable from python to R as a 2D matrix, such that is what R uses to generate prediction 
+    # this is to convert the list_to_pred variable from python to R as a 2D matrix, such that is what R uses to generate prediction
     for i in range(0, len(list_to_pred)):
         temp = f"px{i} <- c("
         for val in list_to_pred[i]:
@@ -200,22 +205,22 @@ def predict(formula, list_to_pred, list_of_var):
         temp = temp[:-1] + ")"
         r(temp)
 
-    # converting the generated matrix into a data frame for prediction 
+    # converting the generated matrix into a data frame for prediction
     pred_str = f"""pred_frame <- data.frame("""
     for i in range(len(list_of_var)):
         pred_str = pred_str + f"px{i},"
     pred_str = pred_str[:-1] + ")"
     r(pred_str)
 
-    # to assiocate the column of the dataframe to the given list of variables 
+    # to assiocate the column of the dataframe to the given list of variables
     for i in range(0, len(list_of_var)):
         r(f"names(pred_frame)[{i + 1}] = \"x{list_of_var[i]}\"")
 
-    # Generating the actual prediction 
+    # Generating the actual prediction
     r_code = f"prediction <- predict({model_name}, pred_frame, se.fit=TRUE)"
     verbose_code = "\n print(prediction$se.fit)"
 
-    r_code = r_code+ verbose_code if verbose == True else r_code
+    r_code = r_code + verbose_code if verbose == True else r_code
     r(r_code)
 
     r("pred_fit <- prediction$fit")
@@ -225,10 +230,11 @@ def predict(formula, list_to_pred, list_of_var):
 
     return prediction_1_list
 
-#Not used - left over from previous testing 
+
+# Not used - left over from previous testing
 def find_smallest_non_negative(lst):
     '''
-    This function finds the smallest non-negative number in a list 
+    This function finds the smallest non-negative number in a list
 
     '''
     non_negative_numbers = [num for num in lst if num >= 0]
@@ -237,10 +243,11 @@ def find_smallest_non_negative(lst):
     else:
         return None
 
-# Not used - left over from previous testing 
+
+# Not used - left over from previous testing
 def find_index(list, point):
     '''
-    This function returns the index of a point in a list, if the point is in a list 
+    This function returns the index of a point in a list, if the point is in a list
     '''
     try:
         index = list.index(point)
@@ -253,11 +260,10 @@ def find_index(list, point):
 def find_ROI(pred_list, mod):
     '''
     This function is a big one....
-    it first defines the ROI (region of interest, not return on investment) based on the predicted points, 
-    and find points that are within that ROI, regardless of how many there are.... 
+    it first defines the ROI (region of interest, not return on investment) based on the predicted points,
+    and find points that are within that ROI, regardless of how many there are....
 
     '''
-
 
     """
     Here are some of the area and power information about the base line modules that we are locking. 
@@ -267,43 +273,40 @@ def find_ROI(pred_list, mod):
         3) RAW RTL - Behavoiral Verilog file 
         4) Netlist RTL - this is if you have already converted the raw to bench, and go from bench to Verilog as there are optimizations done there 
     """
-    unlock_area = 186597.809013 
+    unlock_area = 186597.809013
     alu_power_base = 433.72
     branch_power_base = 317.467
     decoder_powewr_base = 30
     power_base = (5.5319 + 121.3738) * 1000
-    
-    # user ROI variables ... 
-    key_size = 32             # how many key bits are we using ? 
-    time = 24 * 60 * 60       # what is the desired SAT attack time ? 
-    p_over_perct = 1.01       # what is the power overhead ? 1% ? 
-    a_over_perct = 1.05       # what is the area overhead? 5% ? 
-    s_preferred = (9 * 10 ** (-5)) # what is the desired attack resilience ? 
+
+    # user ROI variables ...
+    key_size = 32  # how many key bits are we using ?
+    time = 24 * 60 * 60  # what is the desired SAT attack time ?
+    p_over_perct = 1.01  # what is the power overhead ? 1% ?
+    a_over_perct = 1.05  # what is the area overhead? 5% ?
+    s_preferred = (9 * 10 ** (-5))  # what is the desired attack resilience ?
 
     power_overhead = power_base * p_over_perct
     area_overhead = unlock_area * a_over_perct
-    # this is to choose the power based on the modules 
-    mod_power = alu_power_base if mod == "alu" else branch_power_base if mod == "branch" else decoder_powewr_base 
+    # this is to choose the power based on the modules
+    mod_power = alu_power_base if mod == "alu" else branch_power_base if mod == "branch" else decoder_powewr_base
 
     phi_s = 10
     phi_area = 1000
     phi_power = .1
 
-
     if verbose == True:
-        print(pred_list) 
-    
-    # Obtaining the "best" point that meet all constraints
-    non_negative_values = [(x_0, x_1, x_2, S, A, P, SAT) for x_0, x_1, x_2, S, A, P, SAT in pred_list if
-                            S <  s_preferred and A < area_overhead and P - mod_power + power_base < power_overhead and SAT > time and x_0 + 2 * x_1 + x_2 == key_size]
+        print(pred_list)
 
+        # Obtaining the "best" point that meet all constraints
+    non_negative_values = [(x_0, x_1, x_2, S, A, P, SAT) for x_0, x_1, x_2, S, A, P, SAT in pred_list if
+                           S < s_preferred and A < area_overhead and P - mod_power + power_base < power_overhead and SAT > time and x_0 + 2 * x_1 + x_2 == key_size]
 
     # this find the lowest value given our initial budgeting equation
     top_combination = min(non_negative_values, key=lambda point: (point[5]))
     if verbose == True:
         print("Here is the point in the ROI with the lowest Power consumption")
         print(top_combination)
-
 
     # S metric
     s_p = top_combination[3]
@@ -314,29 +317,29 @@ def find_ROI(pred_list, mod):
     # power
     p_p = top_combination[5]
 
-
     ROI = []
     ROI_only_points = []
 
-    # grabbing points within distance (defined above) from the best predicted point 
-    for x_0, x_1, x_2, S, A, P, SAT in non_negative_values: # and
-        if abs((s_p - S)/s_p) < phi_s and  abs(A - a_p) < phi_area and  abs((P - p_p) / p_p) < phi_power: #abs(P - p_p) < phi_power:
+    # grabbing points within distance (defined above) from the best predicted point
+    for x_0, x_1, x_2, S, A, P, SAT in non_negative_values:  # and
+        if abs((s_p - S) / s_p) < phi_s and abs(A - a_p) < phi_area and abs(
+                (P - p_p) / p_p) < phi_power:  # abs(P - p_p) < phi_power:
             ROI.append((x_0, x_1, x_2, S, A, P, SAT))
 
     sorted_ROI = sorted(ROI, key=lambda point: (point[5]), reverse=False)
     print(len(sorted_ROI))
 
-    # this will only return the indices of the identified points 
+    # this will only return the indices of the identified points
     ROI_only_points = [(x_0, x_1, x_2) for x_0, x_1, x_2, _, _, _, _ in sorted_ROI]
 
     return sorted_ROI, ROI_only_points
 
 
 def predict_SAT_times(x0, x1, x2, y, values_to_pred):
-"""
- this function returns the predicted SAT attack time based on the initial points sampled for each locking techniques 
+    """
+     this function returns the predicted SAT attack time based on the initial points sampled for each locking techniques
 
-"""
+    """
     x0 = np.array(x0)
     x1 = np.array(x1)
     x2 = np.array(x2)
@@ -349,9 +352,11 @@ def predict_SAT_times(x0, x1, x2, y, values_to_pred):
     x2 = x2[valid_indices]
     y = y[valid_indices]
 
+
     # Define the multi-exponential model
     def multi_exp_model(x, a, b, c, d, e, f):
         return a * (2 ** (b * x[0] - f)) + c * (2 ** (d * x[1])) + e * x[2]
+
 
     # Fit the model using curve_fit
     popt, pcov = curve_fit(multi_exp_model, (x0, x1, x2), y, p0=(1, 0.1, 0.1, 0.1, 0.1, 0.1))
@@ -362,14 +367,14 @@ def predict_SAT_times(x0, x1, x2, y, values_to_pred):
     # Construct the fitted equation string
     fitted_equation = f"y = {a_opt:.4f} * (2 ** ({b_opt:.4f} * x[0] - {f_opt:.4f})) + {c_opt:.4f} * (2 ** ({d_opt:.4f} * x[1])) + {e_opt:.4f} * x[2]"
 
-    if verbose == True: 
+    if verbose == True:
         print("Fitted equation:")
         print(fitted_equation)
 
     y_pred = multi_exp_model((x0, x1, x2), *popt)
     r2 = r2_score(y, y_pred)
 
-    if verbose == True: 
+    if verbose == True:
         print(f"R^2 of SAT fit : {r2}")
 
     new_x0 = np.array(values_to_pred[0])
@@ -390,15 +395,13 @@ freeze it, then repeat until went through all of the modules in the array
 """
 
 mod = ["decoder", "branch", "alu"]
-input  = [32, 64, 64]
-
+input = [32, 64, 64]
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-
-    # Start the server (automation tool first), then run this 
+    # Start the server (automation tool first), then run this
     s.connect((HOST, PORT))
 
-    # go through all of the modules 
+    # go through all of the modules
     for ii in range(len(mod)):
 
         # num_points - Number of points to sample
@@ -427,8 +430,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         for _ in range(num_x_variables):
             indep_var.append([])
 
-        # creating the cartesian product of the input space 
-        # it is also represented by K_SFLL X K_ANTISAT X K_SLL 
+        # creating the cartesian product of the input space
+        # it is also represented by K_SFLL X K_ANTISAT X K_SLL
         for SFLL_size in range(1, input[ii] + 1):  # 1,68
             SFLL.append(SFLL_size)
         for anti_sat_size in range(3, input[ii] + 1):
@@ -442,17 +445,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     if anti_sat_size == 0 and SLL_size == 0 and SFLL_size == 0:
                         continue
                     else:
-                        if SFLL_size + 2*anti_sat_size + SLL_size == 64:  # change this to fit another budegt requirement 
+                        if SFLL_size + 2 * anti_sat_size + SLL_size == 64:  # change this to fit another budegt requirement
                             indep_var[0].append(SFLL_size)
                             indep_var[1].append(anti_sat_size)
                             indep_var[2].append(SLL_size)
 
-        # the real input space here 
+        # the real input space here
         x_val = []
         for i in range(len(indep_var[0])):
             x_val.append([indep_var[0][i], indep_var[1][i], indep_var[2][i]])
 
-        # these two arrays store the sampled points from the design space 
+        # these two arrays store the sampled points from the design space
         sampled_dep = []
         sampled_indep = []
 
@@ -462,7 +465,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         for i in range(num_y_variables):
             sampled_dep.append([])
 
-        # a dictionary here just to ensure that we dont sample points that have been sampled 
+        # a dictionary here just to ensure that we dont sample points that have been sampled
         dsm_dict = dict()
         existing_points_set = set()
 
@@ -476,13 +479,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if mod[ii] == "alu":
             operations = [
                 # corner cases to prevent out of bound interpolation
-                [1, 0, 0],  
+                [1, 0, 0],
                 [8, 0, 0],
                 [0, 3, 0],
                 [0, 6, 0],
                 [0, 0, 3],
                 [input[ii], 0, 0],
-                [0, input[ii]/2, 0],
+                [0, input[ii] / 2, 0],
                 [0, 0, input[ii]],
                 [input[ii], input[ii], input[ii]]
             ]
@@ -497,7 +500,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 [0, 9, 0],
                 [0, 0, 3],
                 [input[ii], 0, 0],
-                [0, input[ii]/2, 0],
+                [0, input[ii] / 2, 0],
                 [0, 0, input[ii]],
                 [input[ii], input[ii], input[ii]]
 
@@ -508,31 +511,30 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # this is to obtain the corner cases of the variable
             operations = [
 
-                 [3, 0, 0],
+                [3, 0, 0],
                 [9, 0, 0],
                 [0, 3, 0],
                 [0, 6, 0],
                 [0, 0, 3],
                 [input[ii], 0, 0],
-                [0, input[ii]/2, 0],
+                [0, input[ii] / 2, 0],
                 [0, 0, input[ii]]
             ]
 
-        # adding the predefined corner cases into the dictionary 
+        # adding the predefined corner cases into the dictionary
         for operation in operations:
             index = find_index(x_val, operation)
             for i in range(num_x_variables):
                 sampled_indep[i].append(operation[i])
             existing_points_set.add(index)
 
-        # Uniform sampling method here 
+        # Uniform sampling method here
         interval = len(indep_var[0]) / (inital_points)
         point = [int(round(i * interval)) for i in range(len(indep_var[0]))]
 
-        
-        while (len(existing_points_set)) < inital_points - 4:
+        while (len(existing_points_set)) < inital_points - 9:
             for new_point in point:
-                if (len(existing_points_set)) == inital_points - 4:
+                if (len(existing_points_set)) == inital_points - 9:
                     break
                 if new_point not in existing_points_set:  # we dont want to add point that we already have
                     existing_points_set.add(new_point)
@@ -540,7 +542,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     for i in range(num_x_variables):
                         sampled_indep[i].append(new_x[i])
                     operations.append(new_x)
-
 
         # Send the entire operations array over to the accelerator
         message = json.dumps({"lock": operations, "mod": mod[ii], "done": None})
@@ -580,7 +581,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 x_var_name.append("x" + str(i))
                 convert2R(x_var_name[i], sampled_indep[i])
 
-            if verbose == True: 
+            if verbose == True:
                 print(sampled_dep[0])
                 print(sampled_dep[1])
                 print(sampled_dep[2])
@@ -594,21 +595,20 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # this will make the model
             formula = make_model(0)
 
-
             indep_var_need = ["0", "1", "2"]
 
-            formula0 = "y0~" + formula # for S metric
-            formula1 = "y1~" + formula # for Area 
-            formula2 = "y2~" + formula # for Power 
+            formula0 = "y0~" + formula  # for S metric
+            formula1 = "y1~" + formula  # for Area
+            formula2 = "y2~" + formula  # for Power
 
-            # Making predictions 
+            # Making predictions
             S_pred = predict(formula0, indep_var, indep_var_need)
             area_pred = predict(formula1, indep_var, indep_var_need)
             power_pred = predict(formula2, indep_var, indep_var_need)
             sat_pred = predict_SAT_times(sampled_indep[0], sampled_indep[1], sampled_indep[2], sampled_dep[3],
                                          indep_var)
 
-            # Wriring the predictions to the log 
+            # Wriring the predictions to the log
             s_pred_log = open("s_pred_log", "w")
             s_pred_log.write(str(S_pred))
             s_pred_log.close()
@@ -621,7 +621,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             p_pred_log.write(str(power_pred))
             p_pred_log.close()
 
-            # here is the entire design space, input and output space combined 
+            # here is the entire design space, input and output space combined
             values = [
                 (indep_var[0][i], indep_var[1][i], indep_var[2][i], S_pred[i], area_pred[i], power_pred[i], sat_pred[i])
                 for i in
@@ -629,7 +629,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
             ROI, ROI_points = find_ROI(values, mod[ii])
 
-            
             goal_input = []
             new_indep = []
             new_dep = []
@@ -733,7 +732,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print(f"Power iteration {help_me} {num_points}: {new[2], new[0], new[1]} at {new_ROI[0]}")
             # if (help_me == num_simulation - 1) or (abs(old[0] - new[0]) / old[0] < .01) and (
             #         abs(old[1] - new[1]) / old[1] < .01) and (abs(old[2] - new[2]) / old[2] < .01):  # """and what < .20"""
-            if (num_points == 90 or help_me == num_simulation - 1 or old_ROI[:3] == new_ROI[:3]):# or (help_me == num_simulation - 1):
+            if (num_points == 90 or help_me == num_simulation - 1 or old_ROI[:3] == new_ROI[
+                                                                                    :3]):  # or (help_me == num_simulation - 1):
                 configurations = new_ROI[0]
                 message = json.dumps({"lock": new_indep, "mod": mod[ii], "done": configurations})
                 s.send(message.encode())
@@ -746,7 +746,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     Actual : {str(new[1])} , predicted : {str(model_pred[1])} , {abs(new[1] - model_pred[1]) / model_pred[1] * 100}% difference 
     Power: 
     Actual : {str(new[2])} , predicted : {str(model_pred[2])} , {abs(new[2] - model_pred[2]) / model_pred[2] * 100}% difference 
-    
+
     Number of simulated points : {num_points}  Maximum number of data points : {len(indep_var[0])}
     """)
                 print("percent of points simulated : " + str(
