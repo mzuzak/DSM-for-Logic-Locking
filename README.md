@@ -1,14 +1,13 @@
 # Low Overhead Logic Locking for System-Level Security: A Design Space Modeling Approach
 DSM for Logic Locking is an open-source example script implementing Design Space Modeling for obtaining a satisfying locking configuration given an arbitary IC. It provides a means for Python users to utilize R functions, specifically SSANOVA modeling, while staying in the Python domain. An extensive overview of the design space modeling algorithm can be found in the ISLPED'24 paper titled: 
 
-    Low Overhead Logic Locking for System-Level Security : A Design Space Modeling Approach     
-    Authors: Long Lam, Maksym Melnyk, Michael Zuzak
+    Lam, Long, Melnyk, Maksym, and Zuzak, Michael, Low overhead logic locking for system-level security: A design space modeling approach. In Proceedings of the International Symposium on Low Power Electronic Design (ISLPED), 2024
     
 This code-base contains the example Python script for the design space modeling algorithm described in Section 5 of the paper. Note that this code-base modeling algorithm is a local TCP client, which will request points (independent variables) for their response. 
 ## Running 
 This was tested and run using PyCharm 2019. A virtual environment is used to download all dependencies. The DSM algorithm will send over a list of points (to the local TCP server) to be sampled at each iteration. 
-## Pre-Req: 
-A ton of Python packages: 
+## Dependencies: 
+The following Python packages are required: 
 * multiprocessing
 * numpy
 * rpy2
@@ -41,7 +40,7 @@ The code can be run using Pycharm after installing all the packages. The followi
 
     Running accelerator for lock size [[7, 0, 0], [12, 0, 0], [0, 3, 0], [0, 9, 0], [0, 0, 3], [32, 0, 0], [0, 16, 0], [0, 0, 32], [32, 32, 32] ... and 19 more randomly selected points]
 
-The server (design point generator) should recieve those lock configurations. The DSM algorithmn is expecting to recieve the design values given those locking configurations. 
+The server (design point generator) should recieve those locking configurations. The DSM algorithmn is expecting to recieve the design metric values given those locking configurations. 
   
 ## Region of Interest 
 See function find_ROI for the configurations for the region of interest  
@@ -49,10 +48,19 @@ See function find_ROI for the configurations for the region of interest  
 If you have found the design space modeling algorithm useful for your research, we would greatly appreciate citations to the original work. 
 
     Lam, Long, Melnyk, Maksym, and Zuzak, Michael, Low overhead logic locking for system-level security: A design space modeling approach. In Proceedings of the International Symposium on Low Power Electronic Design (ISLPED), 2024
+
+    @inproceedings{dsm_for_ll,
+        author = {Lam, Long and Melnyk, Maksym and Zuzak, Michael},
+        title = {Low Overhead Logic Locking for System-Level Security: A Design Space Modeling Approach},
+        year = {2024},
+        publisher = {Association for Computing Machinery},
+        address = {New York, NY, USA},
+        booktitle = {Proceedings of the International Symposium on Low Power Electronic Design (ISLPED)}
+    }
 ## Final remarks:
 Please do not hesitate to reach out to us with any questions/comments/issues regarding the repo or the work itself:  
 
-    Long Lam <ll5530@rit.edu> (MS'24) / Michael Zuzak <mjzeec@rit.edu> (Assistant Professor)    
+    Long Lam <ll5530@rit.edu> / Michael Zuzak <mjzeec@rit.edu>  
     Department of Computer Engineering    
     Rochester Institute of Technology (RIT) 
     
