@@ -827,7 +827,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             max_val.extend([value]*3)
         for jjj in range(len(mod)*num_technique):
             min_val.append(6) if jjj in anti_sat_index else min_val.append(3)
-        points = generate_integer_uniform_points_with_min(18, min_val, max_val, 14)
+        points = generate_integer_uniform_points_with_min(num_x_variables, min_val, max_val, 14)
         for point in points:
             for iii in range(len(mod)*num_technique):
                 indep_var[iii].append(point[iii]//2) if iii in anti_sat_index else indep_var[iii].append(point[iii])
