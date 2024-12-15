@@ -822,14 +822,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     else:
             # uniform sampling
         max_val, min_val  = [], []
+        anti_sat_index = [3*i+1 for i in range(len(mod))]
         for value in input:
             max_val.extend([value]*3)
         for jjj in range(len(mod)*num_technique):
-            min_val.append(6) if jjj in [1, 4, 7, 10, 13, 16] else min_val.append(3)
+            min_val.append(6) if jjj in anti_sat_index else min_val.append(3)
         points = generate_integer_uniform_points_with_min(18, min_val, max_val, 14)
         for point in points:
             for iii in range(len(mod)*num_technique):
-                indep_var[iii].append(point[iii]//2) if iii in [1,4,7,10,13,16] else indep_var[iii].append(point[iii])
+                indep_var[iii].append(point[iii]//2) if iii in anti_sat_index else indep_var[iii].append(point[iii])
 
 
     # this part essentially transpose the 2D array....
@@ -839,6 +840,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         x_val.append(x_array)  # each element in this array is now a point in the input space
 
     # now adding the corner points - lower bound for each module to calculate SAT attack time and upper bound
+    # TODO - Modify corners points accordingly
     x_val.append([1, 0, 0, 3, 0, 0, 7, 0, 0, 1, 0, 0, 3, 0, 0, 7, 0, 0])  # SFLL lower bound
     x_val.append([8, 0, 0, 9, 0, 0, 12, 0, 0, 8, 0, 0, 9, 0, 0, 12, 0, 0])  # SFLL upper bound
     x_val.append([0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0])  # Anti SAT lower bound
