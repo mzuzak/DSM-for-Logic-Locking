@@ -171,13 +171,6 @@ def make_model(num):
     num_model_terms = 0
 
     term_limit = num_points // 20
-
-    if help_me >= 18 and (num_model_terms >= math.ceil(term_limit)):
-        print("============================================================================")
-        print("Final Formula = " + formula + " with adjusted R^2 of " + str(get_R2_bar(get_R2(SSANOVA(formula, num)), num_points, num_model_terms)))
-        print("============================================================================")
-        return formula[3:]
-
     matrix = np.zeros(
         (num_x_variables, num_x_variables))  # 2D array here to indicate which 2nd order term has been added
 
@@ -426,6 +419,7 @@ def find_ROI(model_0_1_2_var, formula_0_1_2, model_3, num_ROI_points, prev_pred)
     r(f"ss_anova_model_1 <- ssanova(y1 ~ {formula_0_1_2[1]}, data = data)")
     r(f"ss_anova_model_2 <- ssanova(y2 ~ {formula_0_1_2[2]}, data = data)")
 
+
     # need to create a position vector for the variable so that we can index them properly
     pos_vec = [[], [], []]  # 3 x whatever array
     pos_counter = 0
@@ -491,21 +485,28 @@ def find_ROI(model_0_1_2_var, formula_0_1_2, model_3, num_ROI_points, prev_pred)
 
     # Define the constraint here for S metric, Area, and SAT runtime
 
-    ''' For RISC V 
+    #For RISC V
     s_max = str(10 ** (-4))
-    area_max = str(186597.8 * 1.05)
+    area_max = str(186702.8 * 1.03)
     sat_min = str(7 * 24 * 60 * 60)
-    '''
+
 
     # For APRSC
-    s_max = str(10 ** (-4))
-    area_max = str(25628.738914* 1.15)
-    sat_min = str(7 * 24 * 60 * 60)
-    ## Power of the APRSC = 34276.3678 uW
+    # s_max = str(10 ** (-4))
+    # area_max = str(25628.74* 1.10)
+    # sat_min = str(7 * 24 * 60 * 60)
+
+
+
+
 
     r(f"s_max <-{s_max}")
     r(f"area_max <- {area_max}")
     r(f"sat_min <-  {sat_min}")
+
+    # Creating the objective function here
+    # we will use optimization with penalty term
+    #           penalty_key <- ifelse(key_response(x) != 160, 9999999999999999999, 0)
 
     r(f"""
         library(GenSA)
@@ -527,7 +528,12 @@ def find_ROI(model_0_1_2_var, formula_0_1_2, model_3, num_ROI_points, prev_pred)
           obj_value <- objective_function(round(x))
           return(obj_value)
         }}
+
+        
+
     """)
+
+    #          #cat("Parameters:", x, "Objective Value:", obj_value, "\n")
 
     min_data_list = "c("
     max_data_list = "c("
@@ -547,24 +553,22 @@ def find_ROI(model_0_1_2_var, formula_0_1_2, model_3, num_ROI_points, prev_pred)
     r(f"upper_bounds <- {max_data_list}")
     if prev_pred == None:
         r(f"initial_guess <- round({mean_data_list})")
-    else:
+    elif iteration_count:
         inital_guess = []
         for var in combined_list:
             inital_guess.append(str(prev_pred[int(var)]))
         inital_guess = ",".join(inital_guess)
         r(f"initial_guess <- c({inital_guess})")
 
-    if help_me > 18:
-        r(f"initial_guess <- round({mean_data_list})")
-
     r(f"""
+
     set.seed(69)
      result <- GenSA(
       par = initial_guess,
       fn = integer_objective_function,
       lower = lower_bounds,
       upper = upper_bounds,
-      control = list(verbose = TRUE, max.time={"2" if help_me <= 18 else "0.5"})
+      control = list(verbose = TRUE, max.time={"100" if iteration_count <= 5 else "10" if iteration_count < 12 else "2" if iteration_count < 14 else "0.001"})
       )
     """)
 
@@ -581,11 +585,17 @@ def find_ROI(model_0_1_2_var, formula_0_1_2, model_3, num_ROI_points, prev_pred)
     """)
     # Now that we have point d , the predicted optimal point from the models, we will do a search around this point for our ROI
 
+    # these are the stopping criteria
     # Defining the radii of the ROI
-    phi_s = 3 * 10 ** (-5)
-    phi_t = .02
-    phi_a = .1
-    phi_p = .05
+    # phi_s = 3 * 10 ** (-5)
+    # phi_t = .02
+    # phi_a = .05
+    # phi_p = .05
+
+    phi_s = 6 * 10 ** (-5)  # Increase sensitivity to changes
+    phi_t = 0.025  # Slightly larger tolerance
+    phi_a = 0.05  # Allow more variation in area
+    phi_p = 0.04  # Permit wider power variations
 
     r(f"""
         phi_s <- {phi_s} 
@@ -682,7 +692,7 @@ def find_ROI(model_0_1_2_var, formula_0_1_2, model_3, num_ROI_points, prev_pred)
     
     """)
 
-    radius = "5" if len(combined_list) < 4 else "3" if len(combined_list) < 5 else "2" if len(
+    radius = "10" if len(combined_list) < 4 else "3" if len(combined_list) < 5 else "2" if len(
         combined_list) < 8 else '1'
 
     r(f"""
@@ -758,17 +768,53 @@ def generate_integer_uniform_points_with_min(dimensions, v_x_min, v_x_max, num_p
 
     return points
 
+def cosine_similarity(vec1, vec2):
+    """
+    Calculate the cosine similarity between two vectors.
+
+    Parameters:
+    vec1 (list): A list of numbers representing the first vector.
+    vec2 (list): A list of numbers representing the second vector.
+
+    Returns:
+    float: The cosine similarity between the two vectors, ranging from -1 to 1.
+
+    Raises:
+    ValueError: If the vectors are of different lengths.
+    """
+    if len(vec1) != len(vec2):
+        raise ValueError("Vectors must be of the same length")
+
+    # Calculate the dot product
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+
+    # Calculate the magnitudes (Euclidean norms) of the vectors
+    magnitude1 = sum(a ** 2 for a in vec1) ** 0.5
+    magnitude2 = sum(b ** 2 for b in vec2) ** 0.5
+
+    # Avoid division by zero
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+
+    return 1 - (dot_product / (magnitude1 * magnitude2))
+
 
 
 """=======================Setting up variables========================================="""
 
-mod = ["addc", "limc", "floata", "upb", "accum", "fmult"] # TODO: add the name of modules of interest
-input = [30, 16, 16, 34, 282, 104]  # TODO: add the input size to the modules 
+## for RISC V 
+mod = ["alu", "branch", "decoder"]
+input = [64, 64, 32]
+
+## for APRSC
+# mod = ["addc", "limc", "floata", "upb", "accum", "fmult"] # TODO: add the name of modules of interest
+# input = [30, 16, 16, 34, 282, 104]  # TODO: add the input size to the modules 
+
 num_technique = 3                   # TODO: change the number of techniques of interest
 sampling_mode = 1  # 0 for random and 1 for uniform
 
 s_max = 10 ** (-4)
-area_max = 25628.738914 * 1.15
+area_max = 186702.8 * 1.03
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     goal_point = None
@@ -792,15 +838,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     indep_var = []
 
-    ## Early convergence - if the points identified by the tool has only a 5% difference from the previous iteration for across 3 iterations then we converge,
-    ## and we take the best solution identified so far for it
-    ## simialrity is calculate with a modified distance:
-    ## assume input space of m1,m2,m3...,m_n , and the solution identified is x1,x2,x3,..,x_n
-    ## the similarity is avg(|xi - xi_prev| / |max(mi) - min(mi)|), for i in 1,2,3,...,n
-    early_convergence = False 
+# Early convergence settings
+    early_convergence = False  # New feature added
     early_convergence_array = []
-    early_convergence_similarity_percent = 0.05
-    early_convergence_similarity_iteration = 3
+    early_convergence_similarity_percent = 0.05  # Reduced from 0.05 to avoid premature stopping
+    early_convergence_similarity_iteration = 3  # Increased from 3 to allow more iterations before stopping
 
     """
     indep_var is a 2D array 
@@ -835,44 +877,39 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     # this part essentially transpose the 2D array....
     x_val = []
+    #for i in range(1):
     for i in range(len(indep_var[0])):
         x_array = [indep[i] for indep in indep_var]
         x_val.append(x_array)  # each element in this array is now a point in the input space
 
-    # now adding the corner points - lower bound for each module to calculate SAT attack time and upper bound
-    # TODO - Modify corners points accordingly
-    x_val.append([1, 0, 0, 3, 0, 0, 7, 0, 0, 1, 0, 0, 3, 0, 0, 7, 0, 0])  # SFLL lower bound
-    x_val.append([8, 0, 0, 9, 0, 0, 12, 0, 0, 8, 0, 0, 9, 0, 0, 12, 0, 0])  # SFLL upper bound
-    x_val.append([0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0])  # Anti SAT lower bound
-    x_val.append([0, 6, 0, 0, 6, 0, 0, 9, 0, 0, 6, 0, 0, 6, 0, 0, 9, 0])  # Anti SAT upper bound
-    x_val.append([0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3, 0, 0, 3])  # SLL lower bound
-    x_val.append([0, 0, 30, 0, 0, 16, 0, 0, 16, 0, 0, 34, 0, 0, 282, 0, 0, 104])  # SLL upper bound
-    x_val.append([30, 15, 30, 16, 8, 16, 16, 8, 16, 34, 17, 34, 282, 141, 282, 104, 52, 104])  # high bound in the input space
+    # alu, branch, decoder, 3 values for each each indicates how many bits per flocking
+    # sfll anti sat sll
+    #
+    x_val.append([1, 0, 0, 3, 0, 0, 7, 0, 0])  # SFLL lower bound
+    x_val.append([8, 0, 0, 9, 0, 0, 12, 0, 0])  # SFLL upper bound
+    x_val.append([0, 3, 0, 0, 3, 0, 0, 3, 0])  # Anti SAT lower bound
+    x_val.append([0, 6, 0, 0, 6, 0, 0, 9, 0])  # Anti SAT upper bound
+    x_val.append([0, 0, 3, 0, 0, 3, 0, 0, 3])  # SLL lower bound
+    x_val.append([0, 0, 64, 0, 0, 64, 0, 0, 32])  # SLL upper bound
 
-    # Transposed matrix
-    transposed_matrix = [
-        [1, 8, 0, 0, 0, 0, 30],
-        [0, 0, 3, 6, 0, 0, 15],
-        [0, 0, 0, 0, 3, 30, 30],
-        [3, 9, 0, 0, 0, 0, 16],
-        [0, 0, 3, 6, 0, 0, 8],
-        [0, 0, 0, 0, 3, 16, 16],
-        [7, 12, 0, 0, 0, 0, 16],
-        [0, 0, 3, 9, 0, 0, 8 ],
-        [0, 0, 0, 0, 3, 16, 16],
-        [1, 8, 0, 0, 0, 0, 34],
-        [0, 0, 3, 6, 0, 0, 17],
-        [0, 0, 0, 0, 3, 34, 34],
-        [3, 9, 0, 0, 0, 0, 282],
-        [0, 0, 3, 6, 0, 0, 141],
-        [0, 0, 0, 0, 3, 282, 282],
-        [7, 12, 0, 0, 0, 0, 104],
-        [0, 0, 3, 9, 0, 0, 52],
-        [0, 0, 0, 0, 3, 104, 104]
-    ]
 
-    for x, row_x in enumerate(transposed_matrix):
-        indep_var[x].extend(row_x)
+
+    # this array represents a lsit of points for the first variable
+
+    indep_var[0].extend([1, 8, 0, 0, 0, 0])
+    indep_var[1].extend([0, 0, 3, 6, 0, 0])
+    indep_var[2].extend([0, 0, 0, 0, 3, 64])
+    indep_var[3].extend([3, 9, 0, 0, 0, 0])
+    indep_var[4].extend([0, 0, 3, 6, 0, 0])
+    indep_var[5].extend([0, 0, 0, 0, 3, 64])
+    indep_var[6].extend([7, 12, 0, 0, 0, 0])
+    indep_var[7].extend([0, 0, 3, 9, 0, 0])
+    indep_var[8].extend([0, 0, 0, 0, 3, 32])
+
+    initial_guess = None
+    goal_point = [99999 for _ in range(num_x_variables)]
+    goal_n_1 = [99999 for _ in range(num_x_variables)]
+
 
     initial_guess = None
     goal_point = [99999 for _ in range(num_x_variables)] 
@@ -903,10 +940,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     """=======================iterative processs to find the sub-optiaml configuration=============================="""
 
-    old = [9999999, 9999999, 99999999]
-
-    for help_me in range(num_simulation):
-        print(f"Iteration {str(help_me)}")
+    for iteration_count in range(num_simulation):
+        print(f"Iteration {str(iteration_count)}")
         print("Here are the data we have collected so far....")
 
         # First we need to store the data into the R environment
@@ -925,6 +960,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
         for i in range(len(mod)):
             print(f"sampled_dep[3][{i}] = ", sampled_dep[3][i])
+
+        # we are not using R to fit SAT time
 
         # this will make the model for each design value (S metric, area, amd power)
         formula_s = make_model(0)
@@ -1021,6 +1058,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             sampled_dep[3][i].extend(sat_time_recv[i])
 
         # for debugging now
+        print("For debug, S, Area, Power, SAT ALU, SAT Branch, SAT Decoder")
+        print(s_recv)
+        print(area_recv)
+        print(power_recv)
+        for i in range(len(mod)):
+            print(sat_time_recv[i])
 
         print("=================================================================================")
         print(" New design values from simulations: ")
@@ -1028,7 +1071,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         print(f" Area : {area_recv}")
         print(f" Power : {power_recv}")
         print(
-            f" SAT : {[sat_time_recv[0][i] + sat_time_recv[1][i] + sat_time_recv[2][i] + sat_time_recv[3][i] + sat_time_recv[4][i] + sat_time_recv[5][i] for i in range(len(sat_time_recv[2]))]}")
+            f" SAT : {[sat_time_recv[0][i] + sat_time_recv[1][i] + sat_time_recv[2][i] for i in range(len(sat_time_recv[2]))]}")
         print("=================================================================================")
 
         ''' this block of code is used to determine if we have early convergence or not'''
@@ -1039,8 +1082,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         else:
             # need to copmpare our current solution with the previously idenitifed one
             prev_sol = early_convergence_array[len(early_convergence_array)-1]
-            difference = [abs(prev_sol[i] - goal_point[i])/input[i//3] if prev_sol[i] != 0 and goal_point[i] !=0 else 0 for i in range(num_x_variables) ]
-            similarity = sum(difference)/len(difference)
+            similarity = cosine_similarity(prev_sol, goal_point)
             prev_sol_index = x_val.index(prev_sol)
 
             if sampled_dep[1][cur_sol_index] < area_max and sampled_dep[0][cur_sol_index] < s_max:
@@ -1051,28 +1093,26 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             else:
                 early_convergence_array = []
 
-            print("Similarity percent",similarity)
-        print("Early convergence array " , early_convergence_array)
         early_convergence = True if len(early_convergence_array) == early_convergence_similarity_iteration else False
 
 
-        print(f"Power iteration {help_me} simulated {num_points}")
-        if (num_points == 500 or help_me == num_simulation - 1 or goal_point == goal_n_1 or (early_convergence == True and initial_guess in early_convergence_array)):
+        print(f"Power iteration {iteration_count} simulated {num_points}")
+        if (num_points == 500 or iteration_count == num_simulation - 1 or goal_point == goal_n_1 or (early_convergence == True and initial_guess in early_convergence_array)) and iteration_count > 10:
             # we are done! Let's report the values we got
             goal_index = x_val.index(initial_guess)
             goal_point  = x_val[goal_index]
             goal_power = sampled_dep[2][goal_index]
             goal_area = sampled_dep[1][goal_index]
-            goal_s = sampled_dep[0][goal_index]
+            goal_s = sampled_dep[0][goal_index]`
             # goal_sat = sampled_dep[3][0][goal_index] + sampled_dep[3][1][goal_index] + sampled_dep[3][2][goal_index]
 
             goal_sat = 0
-            modules_counter = 0
+            shit_modules_counter = 0
             for sat_coefficient in sat_coefficients:
-                goal_sat += sat_coefficient[0] * (2 ** (sat_coefficient[1] * goal_point[modules_counter*3+0] - sat_coefficient[2])) + sat_coefficient[3] * (
-                            2 ** (sat_coefficient[4] * goal_point[modules_counter*3+1])) + sat_coefficient[5] * goal_point[modules_counter*3+2]
-                modules_counter += 1
-  
+                goal_sat += sat_coefficient[0] * (2 ** (sat_coefficient[1] * goal_point[shit_modules_counter*3+0] - sat_coefficient[2])) + sat_coefficient[3] * (
+                            2 ** (sat_coefficient[4] * goal_point[shit_modules_counter*3+1])) + sat_coefficient[5] * goal_point[shit_modules_counter*3+2]
+                shit_modules_counter += 1
+            # goal_sat = sum([sat_coefficients[i] * goal_point[i] for i in range(num_x_variables)])
 
             print(f"""
             ==============================================================================================
@@ -1086,6 +1126,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             """)
 
             exit()
+
         else:
 
 
