@@ -1107,11 +1107,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # goal_sat = sampled_dep[3][0][goal_index] + sampled_dep[3][1][goal_index] + sampled_dep[3][2][goal_index]
 
             goal_sat = 0
-            shit_modules_counter = 0
+            used_modules_counter = 0
             for sat_coefficient in sat_coefficients:
-                goal_sat += sat_coefficient[0] * (2 ** (sat_coefficient[1] * goal_point[shit_modules_counter*3+0] - sat_coefficient[2])) + sat_coefficient[3] * (
-                            2 ** (sat_coefficient[4] * goal_point[shit_modules_counter*3+1])) + sat_coefficient[5] * goal_point[shit_modules_counter*3+2]
-                shit_modules_counter += 1
+                goal_sat += sat_coefficient[0] * (2 ** (sat_coefficient[1] * goal_point[used_modules_counter*3+0] - sat_coefficient[2])) + sat_coefficient[3] * (
+                            2 ** (sat_coefficient[4] * goal_point[used_modules_counter*3+1])) + sat_coefficient[5] * goal_point[used_modules_counter*3+2]
+                used_modules_counter += 1
             # goal_sat = sum([sat_coefficients[i] * goal_point[i] for i in range(num_x_variables)])
 
             print(f"""
