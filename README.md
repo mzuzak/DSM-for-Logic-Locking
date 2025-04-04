@@ -1,9 +1,9 @@
-# Low Overhead Logic Locking for System-Level Security: A Design Space Modeling Approach
+# DSMLock: Low Overhead Logic Locking for System Security with Design Space Modeling 
 DSMLock is an open-source example script implementing Design Space Modeling for obtaining a satisfying locking configuration given an arbitary IC. It provides a means for Python users to utilize R functions, specifically SSANOVA modeling, while staying in the Python domain. An extensive overview of the design space modeling algorithm can be found in the TCAD'25 (if accepted):  
 
     Paul, Robi, Lam, Long, Melnyk, Maksym, and Zuzak, Michael, DSMLock: Low Overhead Logic Locking for System Security with Design Space Modeling 
     
-This code-base contains the example Python script for the design space modeling algorithm described in Section 5 of the paper. Note that this code-base modeling algorithm is a local TCP client, which will request points (independent variables) for their response. 
+This code-base (DSE_main_GENcontains the example Python script for the design space modeling algorithm described in Section 5 of the paper. Note that this code-base modeling algorithm is a local TCP client, which will request points (independent variables) for their response. 
 ## Running 
 This was tested and run using PyCharm 2019. A virtual environment is used to download all dependencies. The DSM algorithm will send over a list of points (to the local TCP server) to be sampled at each iteration. 
 ## Dependencies: 
@@ -46,6 +46,9 @@ The server (design point generator) should recieve those locking configurations.
 See function find_ROI for the configurations for the region of interest  
 
 Said function also incoprate GenSA to perform optimization with the predicted space 
+
+## Old DSM code used for ISLPED'24 
+See DSE_main.py along with README_old.md 
 
 ## Citations:
 If you have found the design space modeling algorithm useful for your research, we would greatly appreciate citations to the original work. 
